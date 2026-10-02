@@ -8,10 +8,10 @@ import dev.isxander.yacl3.config.v2.api.serializer.GsonConfigSerializerBuilder;
 import dev.isxander.yacl3.gui.controllers.ColorController;
 import dev.isxander.yacl3.gui.controllers.slider.DoubleSliderController;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.block.entity.EnderChestBlockEntity;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
+import net.minecraft.world.level.block.entity.EnderChestBlockEntity;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import org.apache.commons.lang3.StringUtils;
 import walksy.customhitboxes.CustomHitboxesMod;
 import walksy.customhitboxes.config.impl.CategoryBank;
@@ -126,7 +126,7 @@ public class ConfigIntegration {
     @SuppressWarnings("deprecation") //stop the compiler crying
     public static Screen createConfigScreen(Screen parent) {
         var screen = YetAnotherConfigLib.create(CONFIG, (defaults, config, builder) -> {
-            builder.title(Text.literal("Custom Hitbox Config"));
+            builder.title(Component.literal("Custom Hitbox Config"));
 
             checkDefaultz(config);
 

@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.10-SNAPSHOT'
+	id 'net.fabricmc.fabric-loom' version '1.17.21'
 	id 'maven-publish'
 }
 
@@ -25,14 +25,14 @@ repositories {
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-	modImplementation("dev.isxander:yet-another-config-lib:${project.yaclversion}")
-	modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
+	implementation("dev.isxander:yet-another-config-lib:${project.yaclversion}")
+	implementation("com.terraformersmc:modmenu:${project.modmenu_version}")
+	runtimeOnly "net.fabricmc:fabric-language-kotlin:${project.kotlin_version}"
 }
 
 processResources {
@@ -44,7 +44,7 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 17
+	it.options.release = 25
 }
 
 java {
@@ -53,8 +53,8 @@ java {
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_17
-	targetCompatibility = JavaVersion.VERSION_17
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
 }
 
 jar {
@@ -78,4 +78,83 @@ publishing {
 		// The repositories here will be used for publishing your artifact, not for
 		// retrieving dependencies.
 	}
+}
+
+// Development-only client integration tests; never included in the distributable JAR.
+sourceSets {
+    smokeTest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+loom {
+    mods {
+        walksycustomhitboxes { sourceSet sourceSets.main }
+        customhitboxes_smoke { sourceSet sourceSets.smokeTest }
+    }
+    runs {
+        smokeTest {
+            client()
+            source sourceSets.smokeTest
+            runDir 'run-smoke'
+            vmArg '-Dfabric.client.gametest'
+            vmArg '-Dfabric.client.gametest.testModResourcesPath=src/smokeTest/resources'
+        }
+    }
+}
+
+
+// Collect installable mods, including YACL's Kotlin runtime, without sources JARs.
+tasks.register('collectRuntimeMods', Copy) {
+    from providers.provider {
+        configurations.runtimeClasspath.files.findAll { file ->
+            file.name in [
+                "fabric-api-${project.fabric_version}.jar",
+                "yet-another-config-lib-${project.yaclversion}.jar",
+                "modmenu-${project.modmenu_version}.jar",
+                "fabric-language-kotlin-${project.kotlin_version}.jar"
+            ].collect { it.toString() }
+        }
+    }
+    into layout.buildDirectory.dir('runtime-mods')
+}
+
+// Exercise the distributable from mods/, without development classes or dependency
+// classpaths masking a missing runtime mod or bundled library.
+sourceSets {
+    artifactSmoke {
+        runtimeClasspath = sourceSets.smokeTest.output + sourceSets.main.runtimeClasspath.filter { file ->
+            !sourceSets.main.output.files.contains(file) &&
+                !(file.name.startsWith('fabric-') && !file.name.startsWith('fabric-loader-') &&
+                    !file.name.startsWith('fabric-log4j-util-') &&
+                    !file.name.startsWith('fabric-client-gametest-api-v1-') &&
+                    !file.name.startsWith('fabric-gametest-api-v1-')) &&
+                !file.name.startsWith('yet-another-config-lib-') &&
+                !file.name.startsWith('modmenu-') && !file.name.startsWith('placeholder-api-') &&
+                !file.name.startsWith('kotlin-') && !file.name.startsWith('kotlinx-') &&
+                !file.name.startsWith('atomicfu-') &&
+                !file.path.contains('/com.twelvemonkeys.') &&
+                !file.path.contains('/org.quiltmc.parsers/')
+        }
+    }
+}
+loom {
+    runs {
+        artifactSmoke {
+            client()
+            source sourceSets.artifactSmoke
+            runDir 'run-artifact-smoke'
+            vmArg '-Dfabric.client.gametest'
+            vmArg '-Dfabric.client.gametest.testModResourcesPath=src/smokeTest/resources'
+        }
+    }
+}
+tasks.register('prepareArtifactSmoke', Sync) {
+    dependsOn tasks.named('jar'), tasks.named('collectRuntimeMods'), tasks.named('smokeTestClasses')
+    from tasks.named('jar').flatMap { it.archiveFile }
+    from layout.buildDirectory.dir('runtime-mods')
+    into layout.projectDirectory.dir('run-artifact-smoke/mods')
+}
+tasks.named('runArtifactSmoke').configure {
+    dependsOn tasks.named('prepareArtifactSmoke')
 }

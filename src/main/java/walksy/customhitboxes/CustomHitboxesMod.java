@@ -2,8 +2,8 @@ package walksy.customhitboxes;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import walksy.customhitboxes.config.ConfigIntegration;
 import walksy.customhitboxes.manager.HitboxManager;
 
@@ -11,7 +11,7 @@ import walksy.customhitboxes.manager.HitboxManager;
 
 public class CustomHitboxesMod implements ModInitializer {
 
-    public static MinecraftClient mc = MinecraftClient.getInstance();
+    public static Minecraft mc = Minecraft.getInstance();
 
     @Override
     public void onInitialize()
@@ -33,6 +33,6 @@ public class CustomHitboxesMod implements ModInitializer {
     public static void debugMessage(Object message)
     {
         if (!ConfigIntegration.CONFIG.instance().debug) return;
-        mc.inGameHud.getChatHud().addMessage(Text.of(String.valueOf(message)));
+        mc.showDebugChat(Component.literal(String.valueOf(message)));
     }
 }

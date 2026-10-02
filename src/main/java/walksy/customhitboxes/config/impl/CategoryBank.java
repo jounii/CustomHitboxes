@@ -4,9 +4,9 @@ import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
 import dev.isxander.yacl3.gui.controllers.ColorController;
 import dev.isxander.yacl3.gui.controllers.slider.DoubleSliderController;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import walksy.customhitboxes.config.ConfigIntegration;
 import walksy.customhitboxes.config.setting.Settings;
 import walksy.customhitboxes.config.setting.TeamHelper;
@@ -20,51 +20,49 @@ public class CategoryBank {
     public static ConfigCategory profile(ConfigIntegration config, ConfigIntegration defaults, Screen parent)
     {
         var selectProfileGroupBuilder = OptionGroup.createBuilder()
-                .name(Text.literal("Select Profile"));
+                .name(Component.literal("Select Profile"));
 
         var createNewProfileGroupBuilder = OptionGroup.createBuilder()
-                .name(Text.literal("Create New Profile"));
+                .name(Component.literal("Create New Profile"));
 
         var deleteProfileGroupBuilder = OptionGroup.createBuilder()
-                .name(Text.literal("Delete Profiles"));
+                .name(Component.literal("Delete Profiles"));
 
         var copyOverProfileGroupBuilder = OptionGroup.createBuilder()
-                .name(Text.literal("Copy Over Profiles"));
+                .name(Component.literal("Copy Over Profiles"));
 
         copyOverProfileGroupBuilder.option(Option.<String>createBuilder()
-                .name(Text.literal("Copy From Profile"))
-                .instant(true)
-                .binding(
+                .name(Component.literal("Copy From Profile"))
+                .stateManager(StateManager.createInstant(
                         "default",
                         () -> config.copyFromProfile,
                         value -> config.copyFromProfile = value
-                )
+                ))
                 .controller(opt -> CyclingListControllerBuilder.create(opt)
                         .values(config.profiles.keySet())
-                        .valueFormatter(Text::literal)
+                        .valueFormatter(Component::literal)
                 )
                 .build()
         );
 
 // Selector for the profile to copy TO
         copyOverProfileGroupBuilder.option(Option.<String>createBuilder()
-                .name(Text.literal("Copy To Profile"))
-                .instant(true)
-                .binding(
+                .name(Component.literal("Copy To Profile"))
+                .stateManager(StateManager.createInstant(
                         "default",
                         () -> config.copyToProfile,
                         value -> config.copyToProfile = value
-                )
+                ))
                 .controller(opt -> CyclingListControllerBuilder.create(opt)
                         .values(config.profiles.keySet())
-                        .valueFormatter(Text::literal)
+                        .valueFormatter(Component::literal)
                 )
                 .build()
         );
 
 // Button to perform the copy
         copyOverProfileGroupBuilder.option(ButtonOption.createBuilder()
-                .name(Text.literal("Copy Settings"))
+                .name(Component.literal("Copy Settings"))
                 .action((s, button) -> {
                     String from = config.copyFromProfile;
                     String to = config.copyToProfile;
@@ -81,34 +79,33 @@ public class CategoryBank {
                     }
 
                     config.profiles.put(to, copiedSettings);
-                    MinecraftClient.getInstance().setScreen(ConfigIntegration.createConfigScreen(parent));
+                    Minecraft.getInstance().gui.setScreen(ConfigIntegration.createConfigScreen(parent));
                 })
-                .text(Text.literal("Copy Over Profile Button"))
+                .text(Component.literal("Copy Over Profile Button"))
                 .build()
         );
 
         // Profile selector (Cycling List Controller)
         selectProfileGroupBuilder.option(Option.<String>createBuilder()
-                .name(Text.literal("Selected Profile - Cycling List"))
-                .instant(true)
-                .binding(
+                .name(Component.literal("Selected Profile - Cycling List"))
+                .stateManager(StateManager.createInstant(
                         defaults.currentProfile,
                         () -> config.currentProfile,
                         value -> {
                             config.currentProfile = value;
-                            MinecraftClient.getInstance().setScreen(ConfigIntegration.createConfigScreen(parent));
+                            Minecraft.getInstance().gui.setScreen(ConfigIntegration.createConfigScreen(parent));
                         }
-                )
+                ))
                 .controller(opt -> CyclingListControllerBuilder.create(opt)
                         .values(config.profiles.keySet())
-                        .valueFormatter(Text::literal)
+                        .valueFormatter(Component::literal)
                 )
                 .build()
         );
 
             /*
             selectProfileGroupBuilder.option(Option.<Settings.Type>createBuilder()
-                    .name(Text.literal("Enum Dropdown"))
+                    .name(Component.literal("Enum Dropdown"))
                     .binding(
                             defaults.woah,
                             () -> config.woah,
@@ -120,19 +117,18 @@ public class CategoryBank {
              */
 
         createNewProfileGroupBuilder.option(Option.<String>createBuilder()
-                .name(Text.literal("New Profile Name"))
-                .binding(
+                .name(Component.literal("New Profile Name"))
+                .stateManager(StateManager.createInstant(
                         defaults.newProfile,
                         () -> config.newProfile,
                         value -> config.newProfile = value
-                )
+                ))
                 .controller(StringControllerBuilder::create)
-                .instant(true)
                 .build()
         );
 
         createNewProfileGroupBuilder.option(ButtonOption.createBuilder()
-                .name(Text.literal("Create New Profile"))
+                .name(Component.literal("Create New Profile"))
                 .action((s, button) -> {
                     if (config.newProfile != null && !config.newProfile.trim().isEmpty()) {
                         String newProfileName = config.newProfile.trim();
@@ -147,33 +143,32 @@ public class CategoryBank {
                             config.profiles.put(newProfileName, newProfileSettings);
                             config.currentProfile = newProfileName;
                             config.newProfile = "";
-                            MinecraftClient.getInstance().setScreen(ConfigIntegration.createConfigScreen(parent));
+                            Minecraft.getInstance().gui.setScreen(ConfigIntegration.createConfigScreen(parent));
                         } else {
                             System.out.println("Profile already exists: " + newProfileName);
                         }
                     }
                 })
-                .text(Text.literal("New Profile Button"))
+                .text(Component.literal("New Profile Button"))
                 .build()
         );
 
         deleteProfileGroupBuilder.option(Option.<String>createBuilder()
-                .name(Text.literal("Profile To Delete - Cycling List"))
-                .instant(true)
-                .binding(
+                .name(Component.literal("Profile To Delete - Cycling List"))
+                .stateManager(StateManager.createInstant(
                         defaults.profileToDelete,
                         () -> config.profileToDelete,
                         value -> config.profileToDelete = value
-                )
+                ))
                 .controller(opt -> CyclingListControllerBuilder.create(opt)
                         .values(config.profiles.keySet())
-                        .valueFormatter(Text::literal)
+                        .valueFormatter(Component::literal)
                 )
                 .build()
         );
 
         deleteProfileGroupBuilder.option(ButtonOption.createBuilder()
-                .name(Text.literal("Delete Selected Profile"))
+                .name(Component.literal("Delete Selected Profile"))
                 .action((s, button) -> {
                     if (config.profileToDelete != null && !config.profileToDelete.trim().isEmpty()) {
                         String profileToDelete = config.profileToDelete.trim();
@@ -193,7 +188,7 @@ public class CategoryBank {
                                 }
                                 config.profiles.put("default", defaultProfileSettings);
                             }
-                            MinecraftClient.getInstance().setScreen(ConfigIntegration.createConfigScreen(parent));
+                            Minecraft.getInstance().gui.setScreen(ConfigIntegration.createConfigScreen(parent));
                         } else {
                             System.out.println("Cannot delete profile: " + profileToDelete);
                         }
@@ -201,12 +196,12 @@ public class CategoryBank {
                         System.out.println("No profile selected for deletion.");
                     }
                 })
-                .text(Text.literal("Delete Profile Button"))
+                .text(Component.literal("Delete Profile Button"))
                 .build()
         );
 
         return ConfigCategory.createBuilder()
-                .name(Text.literal("Profiles"))
+                .name(Component.literal("Profiles"))
                 .group(selectProfileGroupBuilder.build())
                 .group(createNewProfileGroupBuilder.build())
                 .group(deleteProfileGroupBuilder.build())
@@ -217,10 +212,10 @@ public class CategoryBank {
     public static ConfigCategory general(ConfigIntegration config, ConfigIntegration defaults)
     {
         var modSettingsGroupBuilder = OptionGroup.createBuilder()
-                .name(Text.literal("Mod Settings"));
+                .name(Component.literal("Mod Settings"));
 
         modSettingsGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Mod Enabled"))
+                .name(Component.literal("Mod Enabled"))
                 .binding(
                         defaults.modEnabled,
                         () -> config.modEnabled,
@@ -231,7 +226,7 @@ public class CategoryBank {
         );
 
         modSettingsGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Custom Block Hovering Overlay Enabled"))
+                .name(Component.literal("Custom Block Hovering Overlay Enabled"))
                 .binding(
                         defaults.blockHoveringEnabled,
                         () -> config.blockHoveringEnabled,
@@ -242,7 +237,7 @@ public class CategoryBank {
         );
 
         modSettingsGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Enable Hitboxes On Game Load"))
+                .name(Component.literal("Enable Hitboxes On Game Load"))
                 .binding(
                         defaults.enabledOnGameLoad,
                         () -> config.enabledOnGameLoad,
@@ -253,7 +248,7 @@ public class CategoryBank {
         );
 
         return ConfigCategory.createBuilder()
-                .name(Text.literal("General"))
+                .name(Component.literal("General"))
                 .group(modSettingsGroupBuilder.build())
                 .build();
     }
@@ -265,25 +260,25 @@ public class CategoryBank {
         Settings defaultSettings = defaults.get(type);
 
         var renderGroupBuilder = OptionGroup.createBuilder()
-                .name(Text.literal("General Settings"));
+                .name(Component.literal("General Settings"));
 
         var colorGroupBuilder = OptionGroup.createBuilder()
-                .name(Text.literal("Color Settings"));
+                .name(Component.literal("Color Settings"));
 
         var vanishGroupBuilder = OptionGroup.createBuilder()
-                .name(Text.literal("Vanish Behaviour Settings"));
+                .name(Component.literal("Vanish Behaviour Settings"));
 
         var filledHitboxGroupBuilder = OptionGroup.createBuilder()
-                .name(Text.literal("Filled Hitbox Settings"));
+                .name(Component.literal("Filled Hitbox Settings"));
 
         var damageGroupBuilder = OptionGroup.createBuilder()
-                .name(Text.literal("Damage Settings"));
+                .name(Component.literal("Damage Settings"));
 
         var closeGroupBuilder = OptionGroup.createBuilder()
-                .name(Text.literal("Close Behavior Settings"));
+                .name(Component.literal("Close Behavior Settings"));
 
         renderGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Should Render"))
+                .name(Component.literal("Should Render"))
                 .binding(
                         defaultSettings.shouldRender,
                         () -> settings.shouldRender,
@@ -294,7 +289,7 @@ public class CategoryBank {
         );
 
         renderGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Render Look Vector"))
+                .name(Component.literal("Render Look Vector"))
                 .binding(
                         defaultSettings.renderLookVector,
                         () -> settings.renderLookVector,
@@ -305,7 +300,7 @@ public class CategoryBank {
         );
 
         renderGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Server Side Render"))
+                .name(Component.literal("Server Side Render"))
                 .binding(
                         defaultSettings.serverSideRender,
                         () -> settings.serverSideRender,
@@ -316,7 +311,7 @@ public class CategoryBank {
         );
 
         renderGroupBuilder.option(Option.<Double>createBuilder()
-                .name(Text.literal("Box Thickness"))
+                .name(Component.literal("Box Thickness"))
                 .binding(
                         defaultSettings.boxThickness,
                         () -> settings.boxThickness,
@@ -328,7 +323,7 @@ public class CategoryBank {
 
 
         colorGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Rainbow"))
+                .name(Component.literal("Rainbow"))
                 .binding(
                         defaultSettings.rainbow,
                         () -> settings.rainbow,
@@ -339,7 +334,7 @@ public class CategoryBank {
         );
 
         colorGroupBuilder.option(Option.<Color>createBuilder()
-                .name(Text.literal("Color"))
+                .name(Component.literal("Color"))
                 .binding(
                         defaultSettings.color,
                         () -> settings.color,
@@ -350,7 +345,7 @@ public class CategoryBank {
         );
 
         colorGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Color Gradient Enabled"))
+                .name(Component.literal("Color Gradient Enabled"))
                 .binding(
                         defaultSettings.colorGradientEnabled,
                         () -> settings.colorGradientEnabled,
@@ -361,7 +356,7 @@ public class CategoryBank {
         );
 
         colorGroupBuilder.option(Option.<Color>createBuilder()
-                .name(Text.literal("Color Gradient"))
+                .name(Component.literal("Color Gradient"))
                 .binding(
                         defaultSettings.colorGradient,
                         () -> settings.colorGradient,
@@ -373,7 +368,7 @@ public class CategoryBank {
 
         if (type.equals(Settings.Type.PLAYER)) {
             vanishGroupBuilder.option(Option.<Boolean>createBuilder()
-                    .name(Text.literal("Elytra Override"))
+                    .name(Component.literal("Elytra Override"))
                     .binding(
                             defaultSettings.elytraAlwaysRender,
                             () -> settings.elytraAlwaysRender,
@@ -385,7 +380,7 @@ public class CategoryBank {
         }
 
         vanishGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Vanish When Close"))
+                .name(Component.literal("Vanish When Close"))
                 .binding(
                         defaultSettings.vanishWhenClose,
                         () -> settings.vanishWhenClose,
@@ -396,7 +391,7 @@ public class CategoryBank {
         );
 
         vanishGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Vanish Fade"))
+                .name(Component.literal("Vanish Fade"))
                 .binding(
                         defaultSettings.vanishFade,
                         () -> settings.vanishFade,
@@ -407,7 +402,7 @@ public class CategoryBank {
         );
 
         vanishGroupBuilder.option(Option.<Double>createBuilder()
-                .name(Text.literal("Vanish Distance"))
+                .name(Component.literal("Vanish Distance"))
                 .binding(
                         defaultSettings.vanishDistance,
                         () -> settings.vanishDistance,
@@ -418,7 +413,7 @@ public class CategoryBank {
         );
 
         filledHitboxGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Filled Hitbox"))
+                .name(Component.literal("Filled Hitbox"))
                 .binding(
                         defaultSettings.filledHitbox,
                         () -> settings.filledHitbox,
@@ -429,7 +424,7 @@ public class CategoryBank {
         );
 
         filledHitboxGroupBuilder.option(Option.<Color>createBuilder()
-                .name(Text.literal("Filled Hitbox Color"))
+                .name(Component.literal("Filled Hitbox Color"))
                 .binding(
                         defaultSettings.filledHitboxColor,
                         () -> settings.filledHitboxColor,
@@ -440,7 +435,7 @@ public class CategoryBank {
         );
 
         damageGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Change Color On Damage Tick"))
+                .name(Component.literal("Change Color On Damage Tick"))
                 .binding(
                         defaultSettings.changeColorOnDamageTick,
                         () -> settings.changeColorOnDamageTick,
@@ -451,7 +446,7 @@ public class CategoryBank {
         );
 
         damageGroupBuilder.option(Option.<Color>createBuilder()
-                .name(Text.literal("Damage Tick Color"))
+                .name(Component.literal("Damage Tick Color"))
                 .binding(
                         defaultSettings.damageTickColor,
                         () -> settings.damageTickColor,
@@ -462,7 +457,7 @@ public class CategoryBank {
         );
 
         closeGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Change Color When Close"))
+                .name(Component.literal("Change Color When Close"))
                 .binding(
                         defaultSettings.changeColorWhenClose,
                         () -> settings.changeColorWhenClose,
@@ -473,7 +468,7 @@ public class CategoryBank {
         );
 
         closeGroupBuilder.option(Option.<Color>createBuilder()
-                .name(Text.literal("Close Color"))
+                .name(Component.literal("Close Color"))
                 .binding(
                         defaultSettings.closeColor,
                         () -> settings.closeColor,
@@ -484,7 +479,7 @@ public class CategoryBank {
         );
 
         closeGroupBuilder.option(Option.<Double>createBuilder()
-                .name(Text.literal("Close Distance"))
+                .name(Component.literal("Close Distance"))
                 .binding(
                         defaultSettings.closeDistance,
                         () -> settings.closeDistance,
@@ -495,7 +490,7 @@ public class CategoryBank {
         );
 
         return ConfigCategory.createBuilder()
-                .name(Text.literal(type.id))
+                .name(Component.literal(type.id))
                 .group(renderGroupBuilder.build())
                 .group(colorGroupBuilder.build())
                 .group(filledHitboxGroupBuilder.build())
@@ -507,14 +502,14 @@ public class CategoryBank {
 
     public static ConfigCategory teams(ConfigIntegration config, ConfigIntegration defaults) {
         var builder = ConfigCategory.createBuilder()
-                .name(Text.literal("Team Settings"));
+                .name(Component.literal("Team Settings"));
 
         for (int i = 1; i <= 5; i++) {
             int index = i;
 
             builder.option(ListOption.<String>createBuilder()
-                    .name(Text.literal("Team " + index))
-                    .description(OptionDescription.of(Text.literal("Team " + index + " entries")))
+                    .name(Component.literal("Team " + index))
+                    .description(OptionDescription.of(Component.literal("Team " + index + " entries")))
                     .binding(TeamHelper.getTeamList(defaults, index), () -> TeamHelper.getTeamList(config, index), newVal -> TeamHelper.setTeamList(config, index, newVal))
                     .controller(StringControllerBuilder::create)
                     .initial("")
@@ -522,23 +517,23 @@ public class CategoryBank {
             );
 
             builder.group(OptionGroup.createBuilder()
-                    .name(Text.literal("Team " + index + " Settings"))
-                    .description(OptionDescription.of(Text.literal("All the general settings for team " + index)))
+                    .name(Component.literal("Team " + index + " Settings"))
+                    .description(OptionDescription.of(Component.literal("All the general settings for team " + index)))
                     .option(Option.createBuilder(Color.class)
-                            .name(Text.literal("Team " + index + " Color"))
-                            .description(OptionDescription.of(Text.literal("Color of team " + index)))
+                            .name(Component.literal("Team " + index + " Color"))
+                            .description(OptionDescription.of(Component.literal("Color of team " + index)))
                             .binding(TeamHelper.getTeamColor(defaults, index), () -> TeamHelper.getTeamColor(config, index), newVal -> TeamHelper.setTeamColor(config, index, newVal))
                             .customController(option -> new ColorController(option, true))
                             .build())
                     .option(Option.createBuilder(boolean.class)
-                            .name(Text.literal("Team " + index + " Color Gradient Enabled"))
-                            .description(OptionDescription.of(Text.literal("Requires player gradients to be enabled")))
+                            .name(Component.literal("Team " + index + " Color Gradient Enabled"))
+                            .description(OptionDescription.of(Component.literal("Requires player gradients to be enabled")))
                             .binding(TeamHelper.getTeamGradientEnabled(defaults, index), () -> TeamHelper.getTeamGradientEnabled(config, index), newVal -> TeamHelper.setTeamGradientEnabled(config, index, newVal))
                             .controller(BooleanControllerBuilder::create)
                             .build())
                     .option(Option.createBuilder(Color.class)
-                            .name(Text.literal("Team " + index + " Color Gradient"))
-                            .description(OptionDescription.of(Text.literal("Color gradient of team " + index)))
+                            .name(Component.literal("Team " + index + " Color Gradient"))
+                            .description(OptionDescription.of(Component.literal("Color gradient of team " + index)))
                             .binding(TeamHelper.getTeamGradientColor(defaults, index), () -> TeamHelper.getTeamGradientColor(config, index), newVal -> TeamHelper.setTeamGradientColor(config, index, newVal))
                             .customController(option -> new ColorController(option, true))
                             .build())
@@ -547,17 +542,17 @@ public class CategoryBank {
         }
 
         builder.group(OptionGroup.createBuilder()
-                .name(Text.literal("Team Global Settings"))
-                .description(OptionDescription.of(Text.literal("All the general settings for the teams")))
+                .name(Component.literal("Team Global Settings"))
+                .description(OptionDescription.of(Component.literal("All the general settings for the teams")))
                 .option(Option.createBuilder(Boolean.class)
-                        .name(Text.literal("Render Team's Projectiles"))
-                        .description(OptionDescription.of(Text.literal("Should render team player's projectiles")))
+                        .name(Component.literal("Render Team's Projectiles"))
+                        .description(OptionDescription.of(Component.literal("Should render team player's projectiles")))
                         .binding(defaults.renderProjectiles, () -> config.renderProjectiles, newVal -> config.renderProjectiles = newVal)
                         .controller(BooleanControllerBuilder::create)
                         .build())
                 .option(Option.createBuilder(Boolean.class)
-                        .name(Text.literal("Recolor Projectiles"))
-                        .description(OptionDescription.of(Text.literal("Should recolor projectiles shot by those team players")))
+                        .name(Component.literal("Recolor Projectiles"))
+                        .description(OptionDescription.of(Component.literal("Should recolor projectiles shot by those team players")))
                         .binding(defaults.recolorProjectiles, () -> config.recolorProjectiles, newVal -> config.recolorProjectiles = newVal)
                         .controller(BooleanControllerBuilder::create)
                         .build())
@@ -569,16 +564,16 @@ public class CategoryBank {
     public static ConfigCategory blockHovering(ConfigIntegration config, ConfigIntegration defaults)
     {
         var generalSettingsGroupBuilder = OptionGroup.createBuilder()
-                .name(Text.literal("Mod Settings"));
+                .name(Component.literal("Mod Settings"));
 
         var colorSettingsGroupBuilder = OptionGroup.createBuilder()
-                .name(Text.literal("Color Settings"));
+                .name(Component.literal("Color Settings"));
 
         var filledGroupBuilder = OptionGroup.createBuilder()
-                .name(Text.literal("Filled Settings"));
+                .name(Component.literal("Filled Settings"));
 
         generalSettingsGroupBuilder.option(Option.<Double>createBuilder()
-                .name(Text.literal("Box Thickness"))
+                .name(Component.literal("Box Thickness"))
                 .binding(
                         defaults.blockHoveringBoxThickness,
                         () -> config.blockHoveringBoxThickness,
@@ -589,7 +584,7 @@ public class CategoryBank {
         );
 
         colorSettingsGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Rainbow"))
+                .name(Component.literal("Rainbow"))
                 .binding(
                         defaults.blockHoveringRainbow,
                         () -> config.blockHoveringRainbow,
@@ -600,7 +595,7 @@ public class CategoryBank {
         );
 
         colorSettingsGroupBuilder.option(Option.<Color>createBuilder()
-                .name(Text.literal("Color"))
+                .name(Component.literal("Color"))
                 .binding(
                         defaults.blockHoveringColor,
                         () -> config.blockHoveringColor,
@@ -611,7 +606,7 @@ public class CategoryBank {
         );
 
         colorSettingsGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Color Gradient Enabled"))
+                .name(Component.literal("Color Gradient Enabled"))
                 .binding(
                         defaults.blockHoveringColorGradientEnabled,
                         () -> config.blockHoveringColorGradientEnabled,
@@ -622,7 +617,7 @@ public class CategoryBank {
         );
 
         colorSettingsGroupBuilder.option(Option.<Color>createBuilder()
-                .name(Text.literal("Color Gradient"))
+                .name(Component.literal("Color Gradient"))
                 .binding(
                         defaults.blockHoveringColorGradient,
                         () -> config.blockHoveringColorGradient,
@@ -634,7 +629,7 @@ public class CategoryBank {
 
 
         filledGroupBuilder.option(Option.<Boolean>createBuilder()
-                .name(Text.literal("Filled Hitbox"))
+                .name(Component.literal("Filled Hitbox"))
                 .binding(
                         defaults.blockHoveringFilledHitbox,
                         () -> config.blockHoveringFilledHitbox,
@@ -645,7 +640,7 @@ public class CategoryBank {
         );
 
         filledGroupBuilder.option(Option.<Color>createBuilder()
-                .name(Text.literal("Filled Hitbox Color"))
+                .name(Component.literal("Filled Hitbox Color"))
                 .binding(
                         defaults.blockHoveringFilledHitboxColor,
                         () -> config.blockHoveringFilledHitboxColor,
@@ -656,7 +651,7 @@ public class CategoryBank {
         );
 
         return ConfigCategory.createBuilder()
-                .name(Text.literal("Block Hovering"))
+                .name(Component.literal("Block Hovering"))
                 .group(generalSettingsGroupBuilder.build())
                 .group(colorSettingsGroupBuilder.build())
                 .group(filledGroupBuilder.build())

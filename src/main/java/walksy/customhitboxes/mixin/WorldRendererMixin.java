@@ -1,42 +1,31 @@
 package walksy.customhitboxes.mixin;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.block.ShapeContext;
-import net.minecraft.client.render.BufferBuilderStorage;
-import net.minecraft.client.render.VertexConsumer;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.WorldRenderer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.BlockPos;
-import org.jetbrains.annotations.Nullable;
-import org.spongepowered.asm.mixin.Final;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.state.level.BlockOutlineRenderState;
+import net.minecraft.client.renderer.state.level.LevelRenderState;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import walksy.customhitboxes.config.ConfigIntegration;
 import walksy.customhitboxes.manager.BlockOutlineRenderManager;
 
-@Mixin(WorldRenderer.class)
+@Mixin(LevelRenderer.class)
 public class WorldRendererMixin {
-
-
-    @Shadow @Final private BufferBuilderStorage bufferBuilders;
-
-    @Shadow @Nullable private ClientWorld world;
-
-    @Inject(method = "drawBlockOutline", at = @At("HEAD"), cancellable = true)
-    public void overrideBlockOutline(MatrixStack matrices, VertexConsumer vertexConsumer, Entity entity, double cameraX, double cameraY, double cameraZ, BlockPos pos, BlockState state, CallbackInfo ci)
-    {
+    @Inject(method = "submitBlockOutline", at = @At("HEAD"), cancellable = true)
+    private void customHitboxes$outline(PoseStack poses, SubmitNodeCollector collector, LevelRenderState state, CallbackInfo ci) {
         if (!ConfigIntegration.CONFIG.instance().blockHoveringEnabled) return;
-        VertexConsumerProvider vertexConsumers = this.bufferBuilders.getEntityVertexConsumers();
-        matrices.push();
-        matrices.translate(pos.getX() - cameraX, (double)pos.getY() - cameraY, (double)pos.getZ() - cameraZ);
-        BlockOutlineRenderManager.render(matrices, vertexConsumers, state.getOutlineShape(this.world, pos, ShapeContext.of(entity)));
-        matrices.pop();
+        BlockOutlineRenderState outline = state.blockOutlineRenderState;
+        if (outline != null) {
+            Vec3 camera = state.cameraRenderState.pos;
+            poses.pushPose();
+            poses.translate(outline.pos().getX() - camera.x, outline.pos().getY() - camera.y, outline.pos().getZ() - camera.z);
+            BlockOutlineRenderManager.render(poses, collector, outline.shape());
+            poses.popPose();
+        }
         ci.cancel();
     }
 }

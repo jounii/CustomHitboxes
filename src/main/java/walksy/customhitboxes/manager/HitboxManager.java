@@ -2,15 +2,17 @@ package walksy.customhitboxes.manager;
 
 import dev.isxander.yacl3.api.Option;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
-import net.minecraft.entity.*;
-import net.minecraft.entity.decoration.EndCrystalEntity;
-import net.minecraft.entity.mob.Angerable;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.entity.passive.PassiveEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.ProjectileEntity;
-import net.minecraft.entity.projectile.thrown.EnderPearlEntity;
-import net.minecraft.item.Items;
+import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.item.FallingBlockEntity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.boss.enderdragon.EndCrystal;
+import net.minecraft.world.entity.NeutralMob;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.AgeableMob;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.projectile.throwableitemprojectile.ThrownEnderpearl;
+import net.minecraft.world.item.Items;
 import walksy.customhitboxes.config.ConfigIntegration;
 import walksy.customhitboxes.config.setting.Settings;
 import walksy.customhitboxes.helper.ColorHelper;
@@ -27,20 +29,20 @@ public class HitboxManager {
     private static boolean loadedOnce = false;
 
         private static Settings getConfig(Entity entity) {
-            if (entity instanceof PlayerEntity) {
+            if (entity instanceof Player) {
                 return get(Settings.Type.PLAYER);
-            } else if (entity instanceof ProjectileEntity projectile) {
-                if (projectile instanceof EnderPearlEntity) {
+            } else if (entity instanceof Projectile projectile) {
+                if (projectile instanceof ThrownEnderpearl) {
                     return get(Settings.Type.ENDER_PEARL);
                 }
                 return get(Settings.Type.PROJECTILE);
-            } else if (entity instanceof HostileEntity) {
+            } else if (entity instanceof Monster) {
                 return get(Settings.Type.HOSTILE_MOB);
-            } else if (entity instanceof Angerable) {
+            } else if (entity instanceof NeutralMob) {
                 return get(Settings.Type.ANGERABLE_MOB);
-            } else if (entity instanceof PassiveEntity) {
+            } else if (entity instanceof AgeableMob) {
                 return get(Settings.Type.PASSIVE_MOB);
-            } else if (entity instanceof EndCrystalEntity) {
+            } else if (entity instanceof EndCrystal) {
                 return get(Settings.Type.END_CRYSTAL);
             } else if (entity instanceof FallingBlockEntity) {
                 return get(Settings.Type.BLOCK_ENTITY);
@@ -66,9 +68,9 @@ public class HitboxManager {
         if (config.changeColorOnDamageTick && entity instanceof LivingEntity && ((LivingEntity) entity).hurtTime > 0) {
             return config.damageTickColor;
         }
-        if (entity instanceof ProjectileEntity projectile)
+        if (entity instanceof Projectile projectile)
         {
-            if (projectile.getOwner() != null && projectile.getOwner() instanceof PlayerEntity owner && ConfigIntegration.CONFIG.instance().recolorProjectiles)
+            if (projectile.getOwner() != null && projectile.getOwner() instanceof Player owner && ConfigIntegration.CONFIG.instance().recolorProjectiles)
             {
                 if (getTeamColor(owner) != null)
                 {
@@ -76,7 +78,7 @@ public class HitboxManager {
                 }
             }
         }
-        if (entity instanceof PlayerEntity p && getTeamColor(p) != null) {
+        if (entity instanceof Player p && getTeamColor(p) != null) {
             return getTeamColor(p);
         }
 
@@ -98,9 +100,9 @@ public class HitboxManager {
             return config.damageTickColor;
         }
 
-        if (entity instanceof ProjectileEntity projectile)
+        if (entity instanceof Projectile projectile)
         {
-            if (projectile.getOwner() != null && projectile.getOwner() instanceof PlayerEntity owner && ConfigIntegration.CONFIG.instance().recolorProjectiles)
+            if (projectile.getOwner() != null && projectile.getOwner() instanceof Player owner && ConfigIntegration.CONFIG.instance().recolorProjectiles)
             {
                 if (getTeamColor(owner) != null)
                 {
@@ -122,20 +124,21 @@ public class HitboxManager {
 
     public static Color getColorGradient(Entity entity) {
         Settings config = getConfig(entity);
-        if (entity instanceof PlayerEntity p && getTeamColorGradient(p) != null)
+        if (entity instanceof Player p && getTeamColorGradient(p) != null)
         {
             if (config.changeColorOnDamageTick && p.hurtTime > 0) {
                 return config.damageTickColor;
             }
             return getTeamColorGradient(p);
         }
-        if (entity instanceof ProjectileEntity projectile)
+        if (entity instanceof Projectile projectile)
         {
-            if (projectile.getOwner() != null && projectile.getOwner() instanceof PlayerEntity owner && ConfigIntegration.CONFIG.instance().recolorProjectiles)
+            if (projectile.getOwner() != null && projectile.getOwner() instanceof Player owner && ConfigIntegration.CONFIG.instance().recolorProjectiles)
             {
                 if (getTeamColor(owner) != null)
                 {
-                    return getTeamColorGradient(owner);
+                    Color gradient = getTeamColorGradient(owner);
+                    return gradient != null ? gradient : getTeamColor(owner);
                 }
             }
         }
@@ -145,9 +148,9 @@ public class HitboxManager {
                 return config.damageTickColor;
             }
 
-            if (entity instanceof ProjectileEntity projectile)
+            if (entity instanceof Projectile projectile)
             {
-                if (projectile.getOwner() != null && projectile.getOwner() instanceof PlayerEntity owner && ConfigIntegration.CONFIG.instance().recolorProjectiles)
+                if (projectile.getOwner() != null && projectile.getOwner() instanceof Player owner && ConfigIntegration.CONFIG.instance().recolorProjectiles)
                 {
                     if (getTeamColor(owner) != null)
                     {
@@ -173,7 +176,7 @@ public class HitboxManager {
     }
 
     public static boolean shouldRender(Entity entity) {
-        if (entity instanceof ProjectileEntity projectile && projectile.getOwner() != null && projectile.getOwner() instanceof PlayerEntity owner)
+        if (entity instanceof Projectile projectile && projectile.getOwner() != null && projectile.getOwner() instanceof Player owner)
         {
             if (getTeamColor(owner) != null)
             {
@@ -194,9 +197,9 @@ public class HitboxManager {
     public static int hitboxMinus(Entity entity) {
         Settings config = getConfig(entity);
         if (!config.vanishWhenClose || entity == mc.player) return 0;
-        if (config.elytraAlwaysRender && entity instanceof PlayerEntity p)
+        if (config.elytraAlwaysRender && entity instanceof Player p)
         {
-            if (p.getEquippedStack(EquipmentSlot.CHEST).isOf(Items.ELYTRA))
+            if (p.getItemBySlot(EquipmentSlot.CHEST).is(Items.ELYTRA))
             {
                 return 0;
             }
@@ -204,7 +207,7 @@ public class HitboxManager {
         int maxFadeAmount = 255;
         double fadeDistance = config.vanishDistance;
         double fadeStartDistance = fadeDistance * 1.5;
-        double distanceToEntity = Math.sqrt(mc.gameRenderer.getCamera().getPos().squaredDistanceTo(entity.getPos()));
+        double distanceToEntity = Math.sqrt(mc.gameRenderer.mainCamera().position().distanceToSqr(entity.position()));
         if (config.vanishFade && distanceToEntity <= fadeStartDistance) {
             double fadeRatio = Math.min(1.0, (fadeStartDistance - distanceToEntity) / (fadeStartDistance - fadeDistance));
             return (int) (maxFadeAmount * fadeRatio);
@@ -217,7 +220,7 @@ public class HitboxManager {
     }
 
     //This was the only efficient way in my head to do this
-    private static Color getTeamColor(PlayerEntity player) {
+    private static Color getTeamColor(Player player) {
         String name = player.getName().getString();
         ConfigIntegration config = ConfigIntegration.CONFIG.instance();
         Map<List<String>, Color> teamColorMap = new HashMap<>();
@@ -236,7 +239,7 @@ public class HitboxManager {
         return null;
     }
 
-    private static Color getTeamColorGradient(PlayerEntity player) {
+    private static Color getTeamColorGradient(Player player) {
         String name = player.getName().getString();
         ConfigIntegration config = ConfigIntegration.CONFIG.instance();
 
@@ -273,7 +276,8 @@ public class HitboxManager {
             if (!loadedOnce && entity == mc.player) {
                 loadedOnce = true;
                 if (ConfigIntegration.CONFIG.instance().enabledOnGameLoad) {
-                    mc.getEntityRenderDispatcher().setRenderHitboxes(true);
+                    mc.debugEntries.setStatus(net.minecraft.client.gui.components.debug.DebugScreenEntries.ENTITY_HITBOXES,
+                            net.minecraft.client.gui.components.debug.DebugScreenEntryStatus.ALWAYS_ON);
                 }
             }
         });

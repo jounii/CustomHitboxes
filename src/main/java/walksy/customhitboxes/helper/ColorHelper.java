@@ -1,7 +1,7 @@
 package walksy.customhitboxes.helper;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.util.Mth;
 
 import java.awt.*;
 
@@ -14,9 +14,9 @@ public class ColorHelper {
         float x = System.currentTimeMillis() % 2000 / 1000F;
         float pi = (float) Math.PI;
 
-        float r = 0.5F + 0.5F * MathHelper.sin(x * pi);
-        float g = 0.5F + 0.5F * MathHelper.sin((x + 4F / 3F) * pi);
-        float b = 0.5F + 0.5F * MathHelper.sin((x + 8F / 3F) * pi);
+        float r = 0.5F + 0.5F * Mth.sin(x * pi);
+        float g = 0.5F + 0.5F * Mth.sin((x + 4F / 3F) * pi);
+        float b = 0.5F + 0.5F * Mth.sin((x + 8F / 3F) * pi);
 
         return new Color(r, g, b);
     }
@@ -31,7 +31,7 @@ public class ColorHelper {
      */
     public static Color lerpToColor(Color color1, Color color2, Entity entity, double fadeDistance) {
         double fadeStartDistance = fadeDistance * 1.5;
-        double distanceToEntity = Math.sqrt(mc.gameRenderer.getCamera().getPos().squaredDistanceTo(entity.getPos()));
+        double distanceToEntity = Math.sqrt(mc.gameRenderer.mainCamera().position().distanceToSqr(entity.position()));
 
         if (distanceToEntity > fadeStartDistance) {
             return color1;
@@ -42,7 +42,7 @@ public class ColorHelper {
         }
 
         float t = (float) ((fadeStartDistance - distanceToEntity) / (fadeStartDistance - fadeDistance));
-        t = MathHelper.clamp(t, 0.0f, 1.0f);
+        t = Mth.clamp(t, 0.0f, 1.0f);
 
         int r = (int) (color1.getRed() + t * (color2.getRed() - color1.getRed()));
         int g = (int) (color1.getGreen() + t * (color2.getGreen() - color1.getGreen()));

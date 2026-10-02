@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "customhitboxes_smoke",
+  "version": "1.0.0",
+  "name": "Custom Hitboxes development smoke tests",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": ["walksy.customhitboxes.smoke.HitboxSmokeTest"]
+  }
+}
